@@ -1,0 +1,42 @@
+{
+  "name": "feyi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Feyi — live, game-based learning platform",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "setup": "pnpm install && pnpm --filter @feyi/shared build && pnpm infra:up && pnpm db:migrate && pnpm db:seed",
+    "predev": "pnpm --filter @feyi/shared build",
+    "dev": "pnpm --parallel --filter \"./backend\" --filter \"./frontend\" dev",
+    "dev:backend": "pnpm --filter @feyi/backend dev",
+    "dev:frontend": "pnpm --filter @feyi/frontend dev",
+    "build": "pnpm --filter @feyi/shared build && pnpm --filter @feyi/backend build && pnpm --filter @feyi/frontend build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v && docker compose up -d",
+    "db:migrate": "pnpm --filter @feyi/backend db:migrate",
+    "db:seed": "pnpm --filter @feyi/backend db:seed",
+    "db:studio": "pnpm --filter @feyi/backend db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "bcrypt",
+      "sharp",
+      "@nestjs/core",
+      "unrs-resolver"
+    ]
+  }
+}

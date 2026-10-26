@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 120 pnpm exec tsx /tmp/ticket-check.ts)"
+    ]
+  }
+}

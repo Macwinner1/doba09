@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "declaration": true,
+    "removeComments": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    // Pinned so the emitted layout is dist/main.js. Without it TypeScript infers
+    // the root from every input file and nests the output a level deeper.
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "incremental": true,
+    // Keep the build cache inside dist so nest's deleteOutDir clears it too.
+    // Left at the default it survives a wiped dist and tsc then skips emitting
+    // files it believes are still there.
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  // prisma/seed.ts is deliberately out of the build — it is a dev script run
+  // through tsx, not part of the deployed server.
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/generated"]
+}

@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: feyi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: feyi
+      POSTGRES_PASSWORD: feyi
+      POSTGRES_DB: feyi
+    ports:
+      - '5433:5432'
+    volumes:
+      - feyi-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U feyi -d feyi']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: feyi-redis
+    restart: unless-stopped
+    # Live game state is ephemeral by design, but appendonly keeps a game alive
+    # across a local container restart so dev sessions aren't lost mid-test.
+    command: redis-server --appendonly yes
+    ports:
+      - '6380:6379'
+    volumes:
+      - feyi-redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  feyi-pgdata:
+  feyi-redisdata:

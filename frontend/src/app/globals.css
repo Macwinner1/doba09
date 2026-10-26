@@ -1,0 +1,196 @@
+@import 'tailwindcss';
+
+/*
+ * Feyi's design tokens.
+ *
+ * The four answer colours are load-bearing, not decoration: a player's phone
+ * shows only coloured shapes, and they match them against the big screen. They
+ * must stay in sync with ANSWER_SLOTS in @feyi/shared.
+ *
+ * Every colour here is paired with a `-deep` variant. That second tone is what
+ * makes buttons look physical — it sits under the face as a solid bottom edge,
+ * so pressing can visibly compress the control rather than just tint it.
+ */
+@theme {
+  --color-feyi-purple: #46178f;
+  --color-feyi-purple-deep: #2d0e5c;
+  --color-feyi-purple-light: #6b3bc4;
+
+  --color-feyi-red: #e21b3c;
+  --color-feyi-red-deep: #a81129;
+  --color-feyi-blue: #1368ce;
+  --color-feyi-blue-deep: #0d4a96;
+  --color-feyi-yellow: #d89e00;
+  --color-feyi-yellow-deep: #a37700;
+  --color-feyi-green: #26890c;
+  --color-feyi-green-deep: #1a6107;
+
+  --color-feyi-ink: #1e1b2e;
+
+  --font-display: var(--font-baloo), system-ui, sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+
+  --radius-chunk: 1.25rem;
+
+  /* Warm, diffuse shadows — a hard grey drop shadow reads as "enterprise". */
+  --shadow-chunk: 0 10px 30px -8px rgb(30 27 46 / 0.45);
+  --shadow-lift: 0 18px 45px -12px rgb(30 27 46 / 0.55);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* Answer buttons are large tap targets; a stray double-tap must not zoom. */
+  touch-action: manipulation;
+}
+
+/* Headings and anything loud uses the display face. */
+.font-display,
+h1,
+h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* ---------------------------------------------------------------------------
+ * The purple field the player and host screens sit on.
+ * ------------------------------------------------------------------------- */
+.feyi-bg {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.14) 0, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgb(255 255 255 / 0.1) 0, transparent 40%),
+    linear-gradient(160deg, var(--color-feyi-purple) 0%, var(--color-feyi-purple-deep) 100%);
+  overflow: hidden;
+}
+
+/*
+ * Slow drifting orbs behind the content. Both are pure transform animations on
+ * pseudo-elements, so they never trigger layout and cost nothing on a phone.
+ */
+.feyi-bg::before,
+.feyi-bg::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.feyi-bg::before {
+  width: 30rem;
+  height: 30rem;
+  top: -8rem;
+  left: -8rem;
+  background: var(--color-feyi-purple-light);
+  animation: feyi-drift-a 22s ease-in-out infinite;
+}
+
+.feyi-bg::after {
+  width: 26rem;
+  height: 26rem;
+  bottom: -7rem;
+  right: -6rem;
+  background: #8b5cf6;
+  animation: feyi-drift-b 27s ease-in-out infinite;
+}
+
+@keyframes feyi-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(6rem, 4rem, 0) scale(1.15); }
+}
+
+@keyframes feyi-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.1); }
+  50%      { transform: translate3d(-5rem, -3rem, 0) scale(1); }
+}
+
+/* ---------------------------------------------------------------------------
+ * Pressable surfaces.
+ *
+ * A solid bottom edge plus a downward nudge on :active makes a control feel
+ * like a physical key. This is most of the "toy" quality in one utility.
+ * ------------------------------------------------------------------------- */
+.feyi-press {
+  border-bottom-width: 6px;
+  border-bottom-style: solid;
+  transition:
+    transform 90ms ease-out,
+    border-bottom-width 90ms ease-out,
+    filter 150ms ease-out;
+}
+
+.feyi-press:active:not(:disabled) {
+  transform: translateY(4px);
+  border-bottom-width: 2px;
+}
+
+.feyi-press:disabled {
+  filter: grayscale(0.4);
+  opacity: 0.45;
+}
+
+@media (hover: hover) {
+  .feyi-press:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Entrances and accents.
+ * ------------------------------------------------------------------------- */
+@keyframes feyi-pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.feyi-pop {
+  animation: feyi-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes feyi-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.feyi-bob {
+  animation: feyi-bob 2.6s ease-in-out infinite;
+}
+
+/* Draws the eye to the PIN without being a distraction on a projector. */
+@keyframes feyi-sheen {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+.feyi-sheen {
+  animation: feyi-sheen 3s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion preferences.
+ *
+ * Everything above is decorative: with motion reduced the layout is identical
+ * and only the movement stops. Nothing here conveys information on its own.
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

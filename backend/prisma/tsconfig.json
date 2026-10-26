@@ -1,0 +1,11 @@
+// The seed script is run by tsx, not by `nest build`, so it sits outside the
+// server's tsconfig. This one exists purely so editors resolve its types.
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["**/*.ts"]
+}

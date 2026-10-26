@@ -1,0 +1,194 @@
+// Feyi data model.
+//
+// A note on what is NOT here: live game state. While a game is running its
+// state lives entirely in Redis — scores change many times a second and none of
+// it is worth a write to Postgres. We persist once, when the game ends, into
+// GameSession / GamePlayer / PlayerAnswer for reporting.
+
+// Default output (node_modules/.prisma/client), imported as "@prisma/client".
+// A custom output under src/ does not survive `nest build`, which compiles only
+// the sources it owns — the generated client would be missing at runtime.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  quizzes             Quiz[]
+  hostedGames         GameSession[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@map("users")
+}
+
+/// Password reset tickets.
+///
+/// Only the SHA-256 hash is stored, so a leaked database dump yields nothing
+/// that can be redeemed. `usedAt` makes a token single-use — following the same
+/// link twice must not work, since reset emails linger in inboxes for years.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  /// Kept for abuse investigation, not for authorisation.
+  requestIp String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+/// Hashed refresh tokens, one row per active device, so logout-everywhere and
+/// rotation are both possible.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Quiz {
+  id          String     @id @default(cuid())
+  ownerId     String
+  title       String
+  description String     @default("")
+  coverImage  String?
+  visibility  Visibility @default(PRIVATE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  questions Question[]
+  sessions  GameSession[]
+
+  @@index([ownerId])
+  @@index([visibility])
+  @@map("quizzes")
+}
+
+model Question {
+  id        String       @id @default(cuid())
+  quizId    String
+  order     Int
+  type      QuestionType @default(MULTIPLE_CHOICE)
+  text      String
+  imageUrl  String?
+  timeLimit Int          @default(20)
+  points    Int          @default(1000)
+
+  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  choices Choice[]
+  answers PlayerAnswer[]
+
+  @@unique([quizId, order])
+  @@index([quizId])
+  @@map("questions")
+}
+
+model Choice {
+  id         String  @id @default(cuid())
+  questionId String
+  order      Int
+  text       String
+  isCorrect  Boolean @default(false)
+
+  question Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  PlayerAnswer[]
+
+  @@unique([questionId, order])
+  @@index([questionId])
+  @@map("choices")
+}
+
+/// Written once, when a game ends. The `pin` is kept for the host's reference
+/// but is deliberately NOT unique — PINs are recycled across time.
+model GameSession {
+  id            String    @id @default(cuid())
+  quizId        String
+  hostId        String
+  pin           String
+  quizTitle     String
+  startedAt     DateTime
+  endedAt       DateTime?
+  playerCount   Int       @default(0)
+  questionCount Int       @default(0)
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  host    User         @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  players GamePlayer[]
+
+  @@index([hostId, startedAt])
+  @@index([quizId])
+  @@map("game_sessions")
+}
+
+/// Players are anonymous: a nickname and a score, no user account, nothing
+/// that identifies a person beyond the session.
+model GamePlayer {
+  id            String @id @default(cuid())
+  sessionId     String
+  nickname      String
+  finalScore    Int    @default(0)
+  rank          Int    @default(0)
+  correctCount  Int    @default(0)
+  longestStreak Int    @default(0)
+
+  session GameSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  answers PlayerAnswer[]
+
+  @@index([sessionId, rank])
+  @@map("game_players")
+}
+
+model PlayerAnswer {
+  id            String  @id @default(cuid())
+  playerId      String
+  questionId    String
+  choiceId      String?
+  responseMs    Int?
+  isCorrect     Boolean @default(false)
+  pointsAwarded Int     @default(0)
+
+  player   GamePlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  question Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  choice   Choice?    @relation(fields: [choiceId], references: [id], onDelete: SetNull)
+
+  @@unique([playerId, questionId])
+  @@index([questionId])
+  @@map("player_answers")
+}
