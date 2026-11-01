@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import {
   GAME_EVENTS,
+  LEADERBOARD_SIZE,
   MAX_PLAYERS_PER_GAME,
   QUESTION_INTRO_MS,
   calculateScore,
@@ -539,14 +540,16 @@ export class GameEngineService implements OnModuleDestroy {
       streak: p.streak,
     });
 
+    const top = ranked.slice(0, LEADERBOARD_SIZE).map(toEntry);
+
     this.broadcaster.toHost(pin, GAME_EVENTS.LEADERBOARD_UPDATE, {
-      top: ranked.slice(0, 5).map(toEntry),
+      top,
       isFinal: false,
     });
 
     for (const player of ranked) {
       this.broadcaster.toPlayer(pin, player.id, GAME_EVENTS.LEADERBOARD_UPDATE, {
-        top: ranked.slice(0, 5).map(toEntry),
+        top,
         isFinal: false,
         you: toEntry(player),
       });
@@ -560,12 +563,13 @@ export class GameEngineService implements OnModuleDestroy {
     await this.state.setPhase(pin, 'PODIUM');
 
     const ranked = rankPlayers(await this.state.getPlayers(pin));
-    const podium: PodiumEntry[] = ranked.slice(0, 3).map((p) => ({
+    const standings: PodiumEntry[] = ranked.map((p) => ({
       rank: p.rank,
       playerId: p.id,
       nickname: p.nickname,
       score: p.score,
     }));
+    const podium = standings.slice(0, 3);
 
     const summary = {
       sessionId: meta.gameId,
@@ -575,11 +579,12 @@ export class GameEngineService implements OnModuleDestroy {
       podium,
     };
 
-    this.broadcaster.toHost(pin, GAME_EVENTS.GAME_PODIUM, { podium, summary });
+    this.broadcaster.toHost(pin, GAME_EVENTS.GAME_PODIUM, { podium, standings, summary });
 
     for (const player of ranked) {
       this.broadcaster.toPlayer(pin, player.id, GAME_EVENTS.GAME_PODIUM, {
         podium,
+        standings,
         summary,
         you: { rank: player.rank, score: player.score, nickname: player.nickname },
       });

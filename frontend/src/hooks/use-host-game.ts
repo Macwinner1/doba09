@@ -95,7 +95,7 @@ export function useHostGame(pin: string | null) {
       gameActions.set({ phase: 'LEADERBOARD', leaderboard: payload.top });
 
     const onPodium = (payload: PodiumPayload) =>
-      gameActions.set({ phase: 'PODIUM', podium: payload.podium });
+      gameActions.set({ phase: 'PODIUM', podium: payload.podium, standings: payload.standings ?? [] });
 
     const onEnded = () => gameActions.set({ phase: 'ENDED' });
 

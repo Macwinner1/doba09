@@ -169,7 +169,10 @@ async function main(): Promise<void> {
   // --- 5. play every question --------------------------------------------
   console.log('\n5. Playing through the quiz');
 
-  const podiumPromise = waitFor<{ podium: { nickname: string; score: number; rank: number }[] }>(
+  const podiumPromise = waitFor<{
+    podium: { nickname: string; score: number; rank: number }[];
+    standings: { nickname: string; score: number; rank: number }[];
+  }>(
     host,
     GAME_EVENTS.GAME_PODIUM,
     120_000,
@@ -265,6 +268,11 @@ async function main(): Promise<void> {
   check('fastest correct player wins', podium.podium[0]?.nickname === 'Ada', podium.podium[0]?.nickname);
   check('always-wrong player is last', podium.podium[2]?.nickname === 'Chi', podium.podium[2]?.nickname);
   check('last place scored nothing', podium.podium[2]?.score === 0, String(podium.podium[2]?.score));
+  check(
+    'final standings list every player',
+    podium.standings?.length === nicknames.length,
+    String(podium.standings?.length),
+  );
   check('answer key never reached a player socket', !leakDetected);
 
   await sleep(1_000);

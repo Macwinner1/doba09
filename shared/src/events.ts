@@ -204,6 +204,8 @@ export interface LeaderboardPayload {
 
 export interface PodiumPayload {
   podium: PodiumEntry[];
+  /** Every player in final rank order, so everyone can find their position. */
+  standings: PodiumEntry[];
   summary: GameSummary;
   you?: { rank: number; score: number; nickname: string };
 }

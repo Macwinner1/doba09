@@ -218,7 +218,7 @@ function LiveQuestion({ onSkip }: { onSkip: () => void }) {
         key={question.id}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mx-auto mt-4 max-w-5xl text-center font-display text-5xl font-extrabold text-white"
+        className="mx-auto mt-4 max-w-6xl text-center font-display text-5xl font-extrabold leading-tight text-white sm:text-6xl lg:text-7xl"
       >
         {question.text}
       </motion.h1>
@@ -258,10 +258,10 @@ function LiveQuestion({ onSkip }: { onSkip: () => void }) {
               SLOT_BG[choice.index] ?? 'bg-slate-600',
             )}
           >
-            <span className="h-10 w-10 shrink-0 drop-shadow">
+            <span className="h-12 w-12 shrink-0 drop-shadow">
               <AnswerShape index={choice.index} />
             </span>
-            <span className="font-display text-3xl font-extrabold">{choice.text}</span>
+            <span className="font-display text-3xl font-extrabold sm:text-4xl">{choice.text}</span>
           </motion.div>
         ))}
       </div>
@@ -282,7 +282,7 @@ function QuestionResults({ onNext }: { onNext: () => void }) {
     <main className="flex min-h-screen flex-col bg-feyi-ink px-6 py-6">
       <SoundToggle className="absolute right-4 top-4 z-30" />
 
-      <h1 className="mx-auto max-w-5xl text-center font-display text-4xl font-extrabold text-white">
+      <h1 className="mx-auto max-w-6xl text-center font-display text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl">
         {question.text}
       </h1>
 
@@ -291,7 +291,7 @@ function QuestionResults({ onNext }: { onNext: () => void }) {
       <div className="mx-auto mt-10 flex w-full max-w-4xl flex-1 items-end justify-center gap-6">
         {distribution.map((entry) => (
           <div key={entry.choiceIndex} className="flex flex-1 flex-col items-center justify-end">
-            <span className="mb-2 font-display text-3xl font-extrabold text-white tabular-nums">
+            <span className="mb-2 font-display text-5xl font-extrabold text-white tabular-nums sm:text-6xl">
               {entry.count}
             </span>
 
@@ -306,11 +306,11 @@ function QuestionResults({ onNext }: { onNext: () => void }) {
               )}
             />
 
-            <div className="mt-3 flex items-center gap-2 text-white">
-              <span className="h-6 w-6">
+            <div className="mt-4 flex items-center gap-3 text-white">
+              <span className="h-9 w-9 shrink-0">
                 <AnswerShape index={entry.choiceIndex} />
               </span>
-              <span className="font-bold">
+              <span className="font-display text-2xl font-extrabold sm:text-3xl">
                 {question.choices[entry.choiceIndex]?.text}
                 {entry.choiceIndex === correctChoiceIndex && ' ✓'}
               </span>
@@ -344,7 +344,7 @@ function Leaderboard({ onNext }: { onNext: () => void }) {
        * another instead of the list blinking into a new order. This is the
        * moment the room reacts to, and it is worth the extra machinery.
        */}
-      <ol className="mt-10 w-full max-w-2xl space-y-3">
+      <ol className="mt-8 w-full max-w-3xl space-y-2">
         {leaderboard.map((entry) => (
           <motion.li
             key={entry.playerId}
@@ -352,7 +352,7 @@ function Leaderboard({ onNext }: { onNext: () => void }) {
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ layout: { type: 'spring', stiffness: 260, damping: 26 } }}
-            className="flex items-center gap-4 rounded-chunk bg-white px-6 py-4 shadow-chunk"
+            className="flex items-center gap-4 rounded-chunk bg-white px-6 py-3 shadow-chunk"
           >
             <span className="w-8 text-center font-display text-2xl font-extrabold text-slate-400 tabular-nums">
               {entry.rank}
@@ -400,6 +400,7 @@ function LeaderboardScore({ score }: { score: number }) {
 
 function Podium({ onEnd }: { onEnd: () => void }) {
   const podium = useGameStore((s) => s.podium);
+  const standings = useGameStore((s) => s.standings);
 
   useEffect(() => playSound('fanfare'), []);
 
@@ -450,6 +451,35 @@ function Podium({ onEnd }: { onEnd: () => void }) {
           ),
         )}
       </div>
+
+      {/* Everyone's final position, not just the top three — the same order
+          the report shows afterwards. Rises in after the podium has landed. */}
+      {standings.length > 0 && (
+        <motion.ol
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4 }}
+          className="mt-10 w-full max-w-3xl space-y-2"
+        >
+          {standings.map((entry) => (
+            <li
+              key={entry.playerId}
+              className="flex items-center gap-4 rounded-chunk bg-white px-6 py-3 shadow-chunk"
+            >
+              <span className="w-10 text-center font-display text-2xl font-extrabold text-slate-400 tabular-nums">
+                {entry.rank}
+              </span>
+              <PlayerAvatar nickname={entry.nickname} size={40} />
+              <span className="flex-1 truncate font-display text-2xl font-extrabold text-slate-900">
+                {entry.nickname}
+              </span>
+              <span className="font-display text-2xl font-extrabold text-slate-900 tabular-nums">
+                {entry.score}
+              </span>
+            </li>
+          ))}
+        </motion.ol>
+      )}
 
       <Button size="lg" variant="light" onClick={onEnd} className="mt-12">
         Finish

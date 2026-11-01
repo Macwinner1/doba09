@@ -91,6 +91,8 @@ export function usePlayerGame(pin: string) {
       gameActions.set({
         phase: 'PODIUM',
         podium: payload.podium,
+        // ?? []: a backend deployed before this field existed omits it.
+        standings: payload.standings ?? [],
         myPodium: payload.you ?? null,
       });
 

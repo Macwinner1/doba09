@@ -38,6 +38,7 @@ interface GameState {
   leaderboard: LeaderboardEntry[];
   myLeaderboardEntry: LeaderboardEntry | null;
   podium: PodiumEntry[];
+  standings: PodiumEntry[];
   myPodium: { rank: number; score: number; nickname: string } | null;
 
   me: { playerId: string; nickname: string; score: number; rank: number } | null;
@@ -68,6 +69,7 @@ const initial = {
   leaderboard: [],
   myLeaderboardEntry: null,
   podium: [],
+  standings: [],
   myPodium: null,
   me: null,
 };

@@ -18,6 +18,9 @@ export const NICKNAME_MAX_LENGTH = 15;
 /** Above this, a single game is split-screened in the host lobby UI. */
 export const MAX_PLAYERS_PER_GAME = 200;
 
+/** How many players the between-question scoreboard shows. */
+export const LEADERBOARD_SIZE = 10;
+
 /** Question timing bounds, in seconds. */
 export const MIN_TIME_LIMIT = 5;
 export const MAX_TIME_LIMIT = 240;
@@ -60,7 +63,7 @@ export const GAME_STATE_TTL_SECONDS = 60 * 60 * 6;
 /**
  * The four answer slots, in fixed order. Colour and shape are part of the
  * product: players match the shape on their phone to the shape on the big
- * screen, which is what lets the phone stay text-free.
+ * screen, so a room can play together at a glance.
  */
 export const ANSWER_SLOTS = [
   { index: 0, shape: 'triangle', color: '#E21B3C', name: 'red' },

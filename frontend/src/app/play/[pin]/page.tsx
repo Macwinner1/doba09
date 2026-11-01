@@ -19,9 +19,9 @@ import { useGameStore } from '@/store/game-store';
 /**
  * The player's whole game, on their phone.
  *
- * Note what is deliberately absent once a question is live: the question text
- * and the answer text. Players read those off the shared screen — that is the
- * mechanic that makes the room look up together instead of down at phones.
+ * The phone carries the question, the answers and the clock itself. Players
+ * may be anywhere in the world with no view of the host's screen, so it has to
+ * be playable on its own.
  */
 export default function PlayPage() {
   const params = useParams<{ pin: string }>();
@@ -224,17 +224,43 @@ function Banner({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * The answer pad. Four full-bleed buttons, thumb-sized, no text — the whole
- * screen is the target because players are looking up, not down.
+ * The answer pad: question and clock on top, then one big shape-and-text
+ * button per choice. Text keeps it playable without the host's screen; the
+ * shapes still let a room match phones to the projector at a glance.
  */
 function AnswerPad({ onAnswer }: { onAnswer: (index: number) => void }) {
   const { question, questionEndsAt, clockOffset, answeredChoice } = useGameStore();
   if (!question) return null;
 
+  const header = (
+    <header className="flex items-center justify-between gap-4">
+      <span className="font-display text-lg font-extrabold uppercase tracking-widest text-white/70">
+        Q{question.index + 1} / {question.total}
+      </span>
+      {questionEndsAt !== null && (
+        <Countdown
+          endsAt={questionEndsAt}
+          clockOffset={clockOffset}
+          totalSeconds={question.timeLimit}
+        />
+      )}
+    </header>
+  );
+
+  const questionText = (
+    <h1 className="mt-4 text-center font-display text-2xl font-extrabold leading-snug text-white sm:text-4xl">
+      {question.text}
+    </h1>
+  );
+
   if (answeredChoice !== null) {
     return (
-      <Shell>
-        <motion.div
+      <main className="flex min-h-screen flex-col bg-feyi-ink px-4 py-4">
+        {header}
+        {questionText}
+
+        <div className="flex flex-1 flex-col items-center justify-center py-8">
+          <motion.div
           initial={{ scale: 0.5, rotate: -8, opacity: 0 }}
           animate={{ scale: 1, rotate: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 240, damping: 14 }}
@@ -243,35 +269,27 @@ function AnswerPad({ onAnswer }: { onAnswer: (index: number) => void }) {
             SLOT_BG[answeredChoice] ?? 'bg-slate-600',
           )}
         >
-          <span className="h-14 w-14">
-            <AnswerShape index={answeredChoice} />
-          </span>
-        </motion.div>
+            <span className="h-14 w-14">
+              <AnswerShape index={answeredChoice} />
+            </span>
+          </motion.div>
 
-        <Banner>Locked in</Banner>
-        <p className="mt-4 text-center text-lg text-white/75">
-          You picked {slotName(answeredChoice)}. Eyes on the screen.
-        </p>
-      </Shell>
+          <Banner>Locked in</Banner>
+          <p className="mt-4 text-center text-xl font-bold text-white/85">
+            You picked {question.choices[answeredChoice]?.text ?? slotName(answeredChoice)}
+          </p>
+          <p className="mt-2 text-center text-lg text-white/60">Waiting for the timer…</p>
+        </div>
+      </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-feyi-ink">
-      <header className="flex items-center justify-between px-4 py-3 text-white">
-        <span className="font-display text-sm font-extrabold uppercase tracking-widest text-white/60">
-          Q{question.index + 1} / {question.total}
-        </span>
-        {questionEndsAt !== null && (
-          <Countdown
-            endsAt={questionEndsAt}
-            clockOffset={clockOffset}
-            totalSeconds={question.timeLimit}
-          />
-        )}
-      </header>
+    <main className="flex min-h-screen flex-col bg-feyi-ink px-4 py-4">
+      {header}
+      {questionText}
 
-      <div className="grid flex-1 grid-cols-2 gap-3 p-3">
+      <div className="mt-6 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         {question.choices.map((choice, i) => (
           <motion.button
             key={choice.index}
@@ -285,13 +303,16 @@ function AnswerPad({ onAnswer }: { onAnswer: (index: number) => void }) {
             }}
             aria-label={`Answer ${slotName(choice.index)}`}
             className={cn(
-              'flex items-center justify-center rounded-chunk text-white shadow-chunk',
+              'flex min-h-20 items-center gap-4 rounded-chunk px-5 py-4 text-left text-white shadow-chunk',
               'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70',
               SLOT_BG[choice.index] ?? 'bg-slate-600',
             )}
           >
-            <span className="h-16 w-16 drop-shadow-lg">
+            <span className="h-10 w-10 shrink-0 drop-shadow-lg">
               <AnswerShape index={choice.index} />
+            </span>
+            <span className="font-display text-xl font-extrabold leading-snug sm:text-2xl">
+              {choice.text}
             </span>
           </motion.button>
         ))}
@@ -423,10 +444,10 @@ function PlayerLeaderboard() {
                 isMe ? 'bg-white text-feyi-purple' : 'bg-white/15 text-white',
               )}
             >
-              <span className="w-6 text-center tabular-nums opacity-70">{entry.rank}</span>
-              <PlayerAvatar nickname={entry.nickname} size={32} />
-              <span className="flex-1 truncate">{entry.nickname}</span>
-              <span className="tabular-nums">{entry.score}</span>
+              <span className="w-7 text-center text-lg tabular-nums opacity-70">{entry.rank}</span>
+              <PlayerAvatar nickname={entry.nickname} size={36} />
+              <span className="flex-1 truncate text-lg">{entry.nickname}</span>
+              <span className="text-lg tabular-nums">{entry.score}</span>
             </motion.li>
           );
         })}
@@ -435,8 +456,46 @@ function PlayerLeaderboard() {
   );
 }
 
+/**
+ * Every player's final position, with the viewer's own row highlighted.
+ * Nicknames are unique within a game, so they identify the viewer's row.
+ */
+function Standings({
+  standings,
+  highlightNickname,
+  className,
+}: {
+  standings: { playerId: string; nickname: string; score: number; rank: number }[];
+  highlightNickname?: string;
+  className?: string;
+}) {
+  if (standings.length === 0) return null;
+
+  return (
+    <ol className={cn('w-full max-w-md space-y-2', className)}>
+      {standings.map((entry) => {
+        const isMe = entry.nickname === highlightNickname;
+        return (
+          <li
+            key={entry.playerId}
+            className={cn(
+              'flex items-center gap-3 rounded-2xl px-4 py-3 font-extrabold backdrop-blur',
+              isMe ? 'bg-white text-feyi-purple' : 'bg-white/15 text-white',
+            )}
+          >
+            <span className="w-8 text-center text-lg tabular-nums opacity-70">{entry.rank}</span>
+            <PlayerAvatar nickname={entry.nickname} size={36} />
+            <span className="flex-1 truncate text-lg">{entry.nickname}</span>
+            <span className="text-lg tabular-nums">{entry.score}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function PlayerPodium() {
-  const { myPodium } = useGameStore();
+  const { myPodium, standings } = useGameStore();
   const score = useCountUp(myPodium?.score ?? 0, 1200);
 
   useEffect(() => playSound('fanfare'), []);
@@ -465,6 +524,8 @@ function PlayerPodium() {
       <p className="mt-1 text-center text-sm font-bold uppercase tracking-widest text-white/60">
         final score
       </p>
+
+      <Standings standings={standings} highlightNickname={myPodium?.nickname} className="mt-8" />
     </Shell>
   );
 }
